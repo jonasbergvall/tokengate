@@ -61,16 +61,30 @@ st.markdown("Check your wallet for supported tokens.")
 # MetaMask wallet connection
 wallet_address = wallet_connect(label="Connect Wallet", key="wallet")
 
-# Show "Connect Wallet" status
-if wallet_address:
-    st.success(f"Wallet connected: {wallet_address}")
+# Disconnect button logic
+if "wallet_connected" not in st.session_state:
+    st.session_state.wallet_connected = False
 
-    # Show the "Check Tokens" button only after wallet connection
+# Handle wallet connection
+if wallet_address:
+    st.session_state.wallet_connected = True
+    st.session_state.wallet_address = wallet_address
+
+# Handle disconnect wallet
+if st.session_state.wallet_connected:
+    st.success(f"Wallet connected: {st.session_state.wallet_address}")
+
+    if st.button("Disconnect Wallet"):
+        st.session_state.wallet_connected = False
+        st.session_state.wallet_address = None
+        st.success("Wallet disconnected successfully!")
+
+    # Show "Check Tokens" button only if wallet is connected
     if st.button("Check Tokens"):
         # Ensure the wallet address is valid before using it
-        if wallet_address.startswith("0x") and len(wallet_address) == 42:
+        if st.session_state.wallet_address.startswith("0x") and len(st.session_state.wallet_address) == 42:
             try:
-                checksum_address = web3.to_checksum_address(wallet_address)
+                checksum_address = web3.to_checksum_address(st.session_state.wallet_address)
 
                 # Check for tokens in wallet
                 detected_tokens = []
