@@ -46,25 +46,28 @@ def main():
     )
 
     # Handle messages from JavaScript
-    if st.session_state.get('connected'):
-      st.write(f"Connected account: {st.session_state.address}")
-    elif st.session_state.get('connected') == False:
-      st.write(f"Error: {st.session_state.error}")
+    if "connected" in st.session_state and st.session_state.connected: #check if the key exists before accessing it.
+        st.write(f"Connected account: {st.session_state.address}")
+    elif "connected" in st.session_state and not st.session_state.connected:
+        st.write(f"Error: {st.session_state.error}")
 
     def receive_message(message):
-        if message['data']['connected']:
-            st.session_state['address'] = message['data']['address']
-            st.session_state['connected'] = True
-            st.experimental_rerun()
-        elif not message['data']['connected']:
-            st.session_state['error'] = message['data']['error']
-            st.session_state['connected'] = False
-            st.experimental_rerun()
+        if message and "data" in message and message["data"] and "connected" in message["data"]: #check if the keys exists before accessing them.
+            if message['data']['connected']:
+                st.session_state['address'] = message['data']['address']
+                st.session_state['connected'] = True
+                st.experimental_rerun()
+            elif not message['data']['connected']:
+                st.session_state['error'] = message['data']['error']
+                st.session_state['connected'] = False
+                st.experimental_rerun()
+        else:
+            st.write("Invalid message format received from component.") #print an error message to help debugging
 
     # Use st.query_params instead of st.experimental_get_query_params
-    component_value = st.query_params.get('component_value', None)
+    component_value = st.query_params.get('component_value')
     if component_value:
-        receive_message(component_value[0])  # Assuming it's a list
+        receive_message(component_value)
 
     components.html(
         f"""
@@ -76,7 +79,7 @@ def main():
         """,
         height=0
     )
-    st.experimental_set_query_params(component_value=None)  # Clear query param after processing
+    st.query_params.clear() #clear the query params.
 
 if __name__ == "__main__":
     main()
