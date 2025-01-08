@@ -68,12 +68,12 @@ metamask_html = """
 </head>
 <body>
     <div id="metamask-container">
-        <button id="connect-button" 
-                style="padding: 10px 20px; 
-                       background-color: #1f1f1f; 
-                       color: white; 
-                       border: none; 
-                       border-radius: 5px; 
+        <button id="connect-button"
+                style="padding: 10px 20px;
+                       background-color: #1f1f1f;
+                       color: white;
+                       border: none;
+                       border-radius: 5px;
                        cursor: pointer;">
             Connect MetaMask
         </button>
@@ -84,22 +84,22 @@ metamask_html = """
         (function() {
             const button = document.getElementById('connect-button');
             const status = document.getElementById('status');
-            
+
             async function connectWallet() {
                 if (typeof window.ethereum !== 'undefined') {
                     try {
                         const accounts = await window.ethereum.request({
                             method: 'eth_requestAccounts'
                         });
-                        
+
                         if (accounts.length > 0) {
                             const address = accounts[0];
                             status.textContent = 'Connected: ' + address;
                             status.style.color = 'green';
-                            
+
                             // Store in localStorage as fallback
                             localStorage.setItem('walletAddress', address);
-                            
+
                             // Try to update Streamlit
                             try {
                                 window.parent.postMessage({
@@ -119,9 +119,9 @@ metamask_html = """
                     status.style.color = 'red';
                 }
             }
-            
+
             button.addEventListener('click', connectWallet);
-            
+
             // Check for stored address on load
             const storedAddress = localStorage.getItem('walletAddress');
             if (storedAddress) {
@@ -144,7 +144,7 @@ tab1, tab2 = st.tabs(["MetaMask Connection", "Manual Entry"])
 with tab1:
     # Display MetaMask component
     components.html(metamask_html, height=100)
-    
+
     # Add a refresh button
     if st.button("Refresh Connection Status"):
         st.rerun()
@@ -161,14 +161,14 @@ with tab2:
 # Token checking code (only show if we have an address)
 if st.session_state.wallet_address:
     st.success(f"Wallet connected: {st.session_state.wallet_address}")
-    
+
     if st.button("Disconnect Wallet"):
         st.session_state.wallet_address = None
         st.rerun()
-    
+
     try:
         checksum_address = web3.to_checksum_address(st.session_state.wallet_address)
-        
+
         detected_tokens = []
         for token_name, token_details in tokens.items():
             try:
@@ -179,12 +179,12 @@ if st.session_state.wallet_address:
                 raw_balance = token_contract.functions.balanceOf(checksum_address).call()
                 decimals = token_contract.functions.decimals().call()
                 balance = raw_balance / (10 ** decimals)
-                
+
                 if balance > 0:
                     detected_tokens.append(token_details)
             except Exception:
                 pass
-        
+
         if detected_tokens:
             st.success("The wallet holds the following tokens:")
             for token in detected_tokens:
