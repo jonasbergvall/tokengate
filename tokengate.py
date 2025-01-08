@@ -71,19 +71,17 @@ wallet_address = wallet_connect(label="Connect Wallet", key="wallet")
 if wallet_address and wallet_address != "not":  # Check if wallet_address is valid
     st.session_state.wallet_connected = True
     st.session_state.wallet_address = wallet_address
-else:
-    st.session_state.wallet_connected = False
-    st.session_state.wallet_address = None
 
-# If wallet is connected
+# Handle disconnect wallet
 if st.session_state.wallet_connected:
     st.success(f"Wallet connected: {st.session_state.wallet_address}")
 
     # Disconnect Wallet Button
     if st.button("Disconnect Wallet"):
+        # Clear session state and reload the app
         st.session_state.wallet_connected = False
         st.session_state.wallet_address = None
-        st.success("Wallet disconnected successfully!")
+        st.experimental_rerun()
 
     # Check Tokens Button
     if st.button("Check Tokens"):
