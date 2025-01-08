@@ -61,10 +61,11 @@ st.markdown("Check your wallet for supported tokens.")
 # MetaMask wallet connection
 wallet_address = wallet_connect(label="Connect Wallet", key="wallet")
 
+# Show "Connect Wallet" status
 if wallet_address:
     st.success(f"Wallet connected: {wallet_address}")
 
-    # Add a button to trigger token checking
+    # Show the "Check Tokens" button only after wallet connection
     if st.button("Check Tokens"):
         # Ensure the wallet address is valid before using it
         if wallet_address.startswith("0x") and len(wallet_address) == 42:
