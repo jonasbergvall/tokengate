@@ -55,7 +55,7 @@ tokens = {
 }
 
 # Initialize Streamlit app
-st.title("IndiKin Token Gate")
+st.title("TokenGate App")
 st.markdown("Check your wallet for supported tokens.")
 
 # Initialize session state variables
@@ -78,13 +78,12 @@ if st.session_state.wallet_connected:
 
     # Disconnect Wallet Button
     if st.button("Disconnect Wallet"):
-        # Clear session state and reload the app
+        # Clear session state
         st.session_state.wallet_connected = False
         st.session_state.wallet_address = None
-        st.experimental_rerun()
 
     # Check Tokens Button
-    if st.button("Check Tokens"):
+    elif st.button("Check Tokens"):
         # Ensure the wallet address is valid before using it
         if st.session_state.wallet_address.startswith("0x") and len(st.session_state.wallet_address) == 42:
             try:
