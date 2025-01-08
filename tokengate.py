@@ -4,14 +4,14 @@ import streamlit.components.v1 as components
 def main():
     st.title("MetaMask Connection Example")
 
-    # Embed HTML and JavaScript (using cdnjs)
+    # Embed HTML and JavaScript (using cdnjs and ethers v6)
     components.html(
         """
         <!DOCTYPE html>
         <html>
         <head>
             <title>MetaMask Connection</title>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" type="application/javascript"></script>
+            <script src="https://cdn.jsdelivr.net/npm/ethers@6.0.0/dist/ethers.umd.min.js"></script>
         </head>
         <body>
             <button id="connectButton">Connect Wallet</button>
@@ -23,9 +23,8 @@ def main():
                 connectButton.addEventListener('click', async () => {
                     if (typeof window.ethereum !== 'undefined') {
                         try {
-                            await window.ethereum.request({ method: 'eth_requestAccounts' });
-                            const provider = new ethers.providers.Web3Provider(window.ethereum);
-                            const signer = provider.getSigner();
+                            const provider = new ethers.BrowserProvider(window.ethereum);
+                            const signer = await provider.getSigner();
                             const address = await signer.getAddress();
                             accountAddress.innerText = "Connected Account: " + address;
                             window.parent.postMessage({ 'connected': true, 'address': address }, '*');
