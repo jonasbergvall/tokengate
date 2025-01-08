@@ -21,7 +21,7 @@ def main():
                 const accountAddress = document.getElementById('accountAddress');
 
                 connectButton.addEventListener('click', async () => {
-                    if (typeof window.ethereum !== 'undefined') { // Corrected line: removed f-string syntax
+                    if (typeof window.ethereum !== 'undefined') {
                         try {
                             await window.ethereum.request({ method: 'eth_requestAccounts' });
                             const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -61,6 +61,11 @@ def main():
             st.session_state['connected'] = False
             st.experimental_rerun()
 
+    # Use st.query_params instead of st.experimental_get_query_params
+    component_value = st.query_params.get('component_value', None)
+    if component_value:
+        receive_message(component_value[0])  # Assuming it's a list
+
     components.html(
         f"""
         <script>
@@ -71,9 +76,7 @@ def main():
         """,
         height=0
     )
-    st.experimental_set_query_params(component_value=None)
-    if st.experimental_get_query_params():
-        receive_message(st.experimental_get_query_params()['component_value'][0])
+    st.experimental_set_query_params(component_value=None)  # Clear query param after processing
 
 if __name__ == "__main__":
     main()
