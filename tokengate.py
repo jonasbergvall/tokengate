@@ -72,16 +72,9 @@ if wallet_address and wallet_address != "not":  # Check if wallet_address is val
     st.session_state.wallet_connected = True
     st.session_state.wallet_address = wallet_address
 
-# Handle disconnect wallet
+# Handle wallet connection
 if st.session_state.wallet_connected:
     st.success(f"Wallet connected: {st.session_state.wallet_address}")
-
-    # Disconnect Wallet Button
-    if st.button("Disconnect Wallet"):
-        # Clear session state and reload the app
-        st.session_state.wallet_connected = False
-        st.session_state.wallet_address = None
-        st.rerun()
 
     # Check Tokens Button
     if st.button("Check Tokens"):
