@@ -1,83 +1,42 @@
 import streamlit as st
-import streamlit.components.v1 as components
 
-def main():
-    st.title("MetaMask Connection Example")
+def load_metamask():
+    st.markdown("""
+    <script>
+        async function connectMetaMask() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    // Request account access
+                    const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                    const account = accounts[0];
+                    
+                    // Fetch ETH balance
+                    const balance = await ethereum.request({
+                        method: 'eth_getBalance',
+                        params: [account, 'latest']
+                    });
 
-    # Embed HTML and JavaScript (using cdnjs and ethers v6)
-    components.html(
-        """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>MetaMask Connection</title>
-            <script src="https://cdn.jsdelivr.net/npm/ethers@6.0.0/dist/ethers.umd.min.js"></script>
-        </head>
-        <body>
-            <button id="connectButton">Connect Wallet</button>
-            <div id="accountAddress"></div>
-            <script>
-                const connectButton = document.getElementById('connectButton');
-                const accountAddress = document.getElementById('accountAddress');
+                    // Convert balance to ETH
+                    const balanceInEth = parseFloat(parseInt(balance, 16) / Math.pow(10, 18)).toFixed(4);
 
-                connectButton.addEventListener('click', async () => {
-                    if (typeof window.ethereum !== 'undefined') {
-                        try {
-                            const provider = new ethers.BrowserProvider(window.ethereum);
-                            const signer = await provider.getSigner();
-                            const address = await signer.getAddress();
-                            accountAddress.innerText = "Connected Account: " + address;
-                            window.parent.postMessage({ 'connected': true, 'address': address }, '*');
-                        } catch (error) {
-                            console.error("Error connecting:", error);
-                            accountAddress.innerText = "Error connecting: " + error.message;
-                            window.parent.postMessage({ 'connected': false, 'error': error.message }, '*');
-                        }
-                    } else {
-                        accountAddress.innerText = 'Please install MetaMask!';
-                    }
-                });
-            </script>
-        </body>
-        </html>
-        """,
-        height=200,
-    )
+                    // Update the UI
+                    const info = `Connected: ${account} | Balance: ${balanceInEth} ETH`;
+                    document.getElementById('metamask-info').textContent = info;
 
-    # Handle messages from JavaScript
-    if "connected" in st.session_state and st.session_state.connected:
-        st.write(f"Connected account: {st.session_state.address}")
-    elif "connected" in st.session_state and not st.session_state.connected:
-        st.write(f"Error: {st.session_state.error}")
+                    // Send account and balance back to Streamlit
+                    const streamlitData = { account, balanceInEth };
+                    Streamlit.setComponentValue(streamlitData);
+                } catch (error) {
+                    document.getElementById('metamask-info').textContent = `Error: ${error.message}`;
+                }
+            } else {
+                document.getElementById('metamask-info').textContent = 'MetaMask is not installed!';
+            }
+        }
+    </script>
+    <button onclick="connectMetaMask()">Connect MetaMask</button>
+    <div id="metamask-info" style="margin-top: 10px;">Not connected</div>
+    """, unsafe_allow_html=True)
 
-    def receive_message(message):
-        if message and "data" in message and message["data"] and "connected" in message["data"]:
-            if message['data']['connected']:
-                st.session_state['address'] = message['data']['address']
-                st.session_state['connected'] = True
-                st.experimental_rerun()
-            elif not message['data']['connected']:
-                st.session_state['error'] = message['data']['error']
-                st.session_state['connected'] = False
-                st.experimental_rerun()
-        else:
-            st.write("Invalid message format received from component.")
-
-    component_value = st.query_params.get('component_value')
-    if component_value:
-        receive_message(component_value)
-
-    components.html(
-        """
-        <script>
-        window.addEventListener('message', function(event) {
-            window.streamlit.setComponentValue(event.data)
-        })
-        </script>
-        """,
-        height=0
-    )
-    st.query_params.clear()
-
-if __name__ == "__main__":
-    main()
+st.title("MetaMask Integration")
+load_metamask()
