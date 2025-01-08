@@ -58,28 +58,31 @@ tokens = {
 st.title("TokenGate App")
 st.markdown("Check your wallet for supported tokens.")
 
+# Initialize session state variables
+if "wallet_connected" not in st.session_state:
+    st.session_state.wallet_connected = False
+if "wallet_address" not in st.session_state:
+    st.session_state.wallet_address = None
+
 # MetaMask wallet connection
 wallet_address = wallet_connect(label="Connect Wallet", key="wallet")
 
-# Disconnect button logic
-if "wallet_connected" not in st.session_state:
-    st.session_state.wallet_connected = False
-
-# Handle wallet connection
+# Update session state upon wallet connection
 if wallet_address:
     st.session_state.wallet_connected = True
     st.session_state.wallet_address = wallet_address
 
-# Handle disconnect wallet
+# If wallet is connected
 if st.session_state.wallet_connected:
     st.success(f"Wallet connected: {st.session_state.wallet_address}")
 
+    # Disconnect Wallet Button
     if st.button("Disconnect Wallet"):
         st.session_state.wallet_connected = False
         st.session_state.wallet_address = None
         st.success("Wallet disconnected successfully!")
 
-    # Show "Check Tokens" button only if wallet is connected
+    # Check Tokens Button
     if st.button("Check Tokens"):
         # Ensure the wallet address is valid before using it
         if st.session_state.wallet_address.startswith("0x") and len(st.session_state.wallet_address) == 42:
