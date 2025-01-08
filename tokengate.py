@@ -55,7 +55,7 @@ tokens = {
 }
 
 # Initialize Streamlit app
-st.title("TokenGate App")
+st.title("IndiKin TokenGate")
 st.markdown("Check your wallet for supported tokens.")
 
 # Initialize session state variables
