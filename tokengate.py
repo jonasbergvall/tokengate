@@ -55,7 +55,7 @@ tokens = {
 }
 
 # Initialize Streamlit app
-st.title("TokenGate App")
+st.title("IndiKin Token Gate")
 st.markdown("Check your wallet for supported tokens.")
 
 # Initialize session state variables
@@ -68,9 +68,12 @@ if "wallet_address" not in st.session_state:
 wallet_address = wallet_connect(label="Connect Wallet", key="wallet")
 
 # Update session state upon wallet connection
-if wallet_address:
+if wallet_address and wallet_address != "not":  # Check if wallet_address is valid
     st.session_state.wallet_connected = True
     st.session_state.wallet_address = wallet_address
+else:
+    st.session_state.wallet_connected = False
+    st.session_state.wallet_address = None
 
 # If wallet is connected
 if st.session_state.wallet_connected:
