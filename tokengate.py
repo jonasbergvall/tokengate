@@ -58,20 +58,37 @@ tokens = {
 st.title("TokenGate App")
 st.markdown("Check your wallet for supported tokens.")
 
-# Updated MetaMask detection JavaScript
+# Alternative MetaMask detection approach
 check_metamask_js = """
 async function checkMetaMask() {
-    try {
-        if (window.ethereum) {
-            // Check if we can access ethereum object
-            const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-            return true;
+    if (typeof window !== 'undefined' && typeof window.ethereum !== 'undefined') {
+        try {
+            // Send a small request to see if we can access the provider
+            const chainId = await fetch('https://rpc.pulsechain.com', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    method: 'eth_chainId',
+                    params: [],
+                    id: 1
+                })
+            }).then(r => r.json());
+            
+            // If we got here, we can try to connect
+            const accounts = await window.ethereum.request({
+                method: 'eth_requestAccounts'
+            });
+            
+            return accounts[0] || null;
+        } catch (err) {
+            console.error('MetaMask check failed:', err);
+            return null;
         }
-        return false;
-    } catch (error) {
-        console.error('MetaMask check error:', error);
-        return false;
     }
+    return null;
 }
 await checkMetaMask();
 """
