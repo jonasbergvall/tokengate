@@ -4,29 +4,9 @@ import streamlit.components.v1 as components
 def main():
     st.title("MetaMask Connection Example")
 
-    # Smart contract ABI (replace with your actual ABI)
-    abi = """
-    [
-        {
-            "inputs": [],
-            "name": "greet",
-            "outputs": [
-                {
-                    "internalType": "string",
-                    "name": "",
-                    "type": "string"
-                }
-            ],
-            "stateMutability": "pure",
-            "type": "function"
-        }
-    ]
-    """
-    contract_address = "0x..."  # Replace with your contract address
-
     # Embed HTML and JavaScript
     components.html(
-        f"""
+        """
         <!DOCTYPE html>
         <html>
         <head>
@@ -41,24 +21,23 @@ def main():
                 const accountAddress = document.getElementById('accountAddress');
 
                 connectButton.addEventListener('click', async () => {
-                    if (typeof window.ethereum !== 'undefined') {{
-                        try {{
-                            await window.ethereum.request({{ method: 'eth_requestAccounts' }});
+                    if (typeof window.ethereum !== 'undefined') { // Corrected line: removed f-string syntax
+                        try {
+                            await window.ethereum.request({ method: 'eth_requestAccounts' });
                             const provider = new ethers.providers.Web3Provider(window.ethereum);
                             const signer = provider.getSigner();
                             const address = await signer.getAddress();
                             accountAddress.innerText = "Connected Account: " + address;
-                            // Send address to python
-                            window.parent.postMessage({{ 'connected': true, 'address': address }}, '*');
-                        }} catch (error) {{
+                            window.parent.postMessage({ 'connected': true, 'address': address }, '*');
+                        } catch (error) {
                             console.error("Error connecting:", error);
                             accountAddress.innerText = "Error connecting: " + error.message;
-                            window.parent.postMessage({{ 'connected': false, 'error': error.message }}, '*');
-                        }}
-                    }} else {{
+                            window.parent.postMessage({ 'connected': false, 'error': error.message }, '*');
+                        }
+                    } else {
                         accountAddress.innerText = 'Please install MetaMask!';
-                    }}
-                }});
+                    }
+                });
             </script>
         </body>
         </html>
