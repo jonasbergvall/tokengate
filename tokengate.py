@@ -78,12 +78,13 @@ if st.session_state.wallet_connected:
 
     # Disconnect Wallet Button
     if st.button("Disconnect Wallet"):
-        # Clear session state
+        # Clear session state and reload the app
         st.session_state.wallet_connected = False
         st.session_state.wallet_address = None
+        st.rerun()
 
     # Check Tokens Button
-    elif st.button("Check Tokens"):
+    if st.button("Check Tokens"):
         # Ensure the wallet address is valid before using it
         if st.session_state.wallet_address.startswith("0x") and len(st.session_state.wallet_address) == 42:
             try:
