@@ -1,6 +1,6 @@
 import streamlit as st
 from web3 import Web3
-from streamlit_javascript import st_javascript
+import streamlit.components.v1 as components
 
 # PulseChain RPC Endpoint
 pulsechain_rpc = "https://rpc.pulsechain.com"
@@ -58,100 +58,77 @@ tokens = {
 st.title("TokenGate App")
 st.markdown("Check your wallet for supported tokens.")
 
-# Alternative MetaMask detection approach
-check_metamask_js = """
-async function checkMetaMask() {
-    if (typeof window !== 'undefined' && typeof window.ethereum !== 'undefined') {
-        try {
-            // Send a small request to see if we can access the provider
-            const chainId = await fetch('https://rpc.pulsechain.com', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    jsonrpc: '2.0',
-                    method: 'eth_chainId',
-                    params: [],
-                    id: 1
-                })
-            }).then(r => r.json());
-            
-            // If we got here, we can try to connect
-            const accounts = await window.ethereum.request({
-                method: 'eth_requestAccounts'
-            });
-            
-            return accounts[0] || null;
-        } catch (err) {
-            console.error('MetaMask check failed:', err);
-            return null;
-        }
-    }
-    return null;
-}
-await checkMetaMask();
-"""
+# Create HTML/JS component for MetaMask interaction
+metamask_html = """
+<div id="metamask-container">
+    <button id="connect-button" style="padding: 10px 20px; background-color: #1f1f1f; color: white; border: none; border-radius: 5px; cursor: pointer;">
+        Connect MetaMask
+    </button>
+    <p id="status" style="margin-top: 10px;"></p>
+</div>
 
-# Updated MetaMask connection JavaScript
-connect_metamask_js = """
-async function connectMetaMask() {
+<script>
+document.getElementById('connect-button').addEventListener('click', async () => {
+    const statusElement = document.getElementById('status');
+    
     try {
-        if (window.ethereum) {
-            // Request account access
+        if (typeof window.ethereum !== 'undefined') {
             const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            if (accounts && accounts.length > 0) {
-                return accounts[0];
+            if (accounts.length > 0) {
+                // Send the address back to Streamlit
+                window.parent.postMessage({
+                    type: 'metamask_connected',
+                    address: accounts[0]
+                }, '*');
+                
+                statusElement.textContent = 'Connected: ' + accounts[0];
+                statusElement.style.color = 'green';
             }
+        } else {
+            statusElement.textContent = 'MetaMask not detected. Please install MetaMask.';
+            statusElement.style.color = 'red';
         }
-        return null;
     } catch (error) {
-        console.error('MetaMask connection error:', error);
-        return null;
+        statusElement.textContent = 'Error connecting to MetaMask: ' + error.message;
+        statusElement.style.color = 'red';
     }
+});
+
+// Listen for account changes
+if (typeof window.ethereum !== 'undefined') {
+    window.ethereum.on('accountsChanged', function (accounts) {
+        window.parent.postMessage({
+            type: 'metamask_account_changed',
+            address: accounts[0] || null
+        }, '*');
+    });
 }
-await connectMetaMask();
+</script>
 """
 
 # Session state initialization
 if "wallet_address" not in st.session_state:
     st.session_state.wallet_address = None
-if "metamask_checked" not in st.session_state:
-    st.session_state.metamask_checked = False
 
-# Handle wallet connection
+# Display MetaMask connection component if not connected
 if not st.session_state.wallet_address:
-    st.markdown("### Connect Your Wallet")
+    # Use the HTML component
+    components.html(metamask_html, height=100)
     
-    # Add a button to check for MetaMask
-    if not st.session_state.metamask_checked:
-        if st.button("Check for MetaMask"):
-            metamask_available = st_javascript(check_metamask_js)
-            st.session_state.metamask_checked = True
-            st.session_state.metamask_available = metamask_available
+    # Add a manual address input for testing/backup
+    st.markdown("### Or enter wallet address manually:")
+    manual_address = st.text_input("Enter Ethereum address (0x...)")
+    if manual_address and manual_address.startswith("0x"):
+        if st.button("Check Address"):
+            st.session_state.wallet_address = manual_address
             st.rerun()
-    
-    # If MetaMask check has been performed
-    if st.session_state.metamask_checked:
-        if st.session_state.get('metamask_available', False):
-            if st.button("Connect MetaMask"):
-                wallet_address = st_javascript(connect_metamask_js)
-                if wallet_address:
-                    st.session_state.wallet_address = wallet_address
-                    st.rerun()
-                else:
-                    st.error("Failed to connect to MetaMask. Please try again.")
-        else:
-            st.error("MetaMask is not detected. Please install MetaMask to continue.")
-            st.markdown("[Install MetaMask](https://metamask.io/download/)")
 
-# Rest of the code (token checking and display) remains the same
+# Rest of your token checking code remains the same
 if st.session_state.wallet_address:
     st.success(f"Wallet connected: {st.session_state.wallet_address}")
     
     if st.button("Disconnect Wallet"):
         st.session_state.wallet_address = None
-        st.session_state.metamask_checked = False  # Reset the check
         st.rerun()
     
     try:
