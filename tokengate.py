@@ -86,7 +86,9 @@ metamask_html = """
             const status = document.getElementById('status');
 
             async function connectWallet() {
+                console.log('Connecting to MetaMask...');
                 if (typeof window.ethereum !== 'undefined') {
+                    console.log('MetaMask detected.');
                     try {
                         const accounts = await window.ethereum.request({
                             method: 'eth_requestAccounts'
@@ -113,10 +115,12 @@ metamask_html = """
                     } catch (err) {
                         status.textContent = 'Error: ' + err.message;
                         status.style.color = 'red';
+                        console.error('Error connecting to MetaMask:', err);
                     }
                 } else {
                     status.textContent = 'Please install MetaMask';
                     status.style.color = 'red';
+                    console.error('MetaMask not detected.');
                 }
             }
 
