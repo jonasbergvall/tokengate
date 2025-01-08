@@ -1,2 +1,2 @@
 streamlit
-wallet_connect
+streamlit-wallet-connect
