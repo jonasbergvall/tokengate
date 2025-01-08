@@ -6,7 +6,7 @@ from streamlit_javascript import st_javascript
 pulsechain_rpc = "https://rpc.pulsechain.com"
 web3 = Web3(Web3.HTTPProvider(pulsechain_rpc))
 
-# Token contract details
+# Token contract details remain the same
 tokens = {
     "TEED": {
         "address": "0xA55385633FFFab595E21880Ed7323cFD7D11Cd25",
@@ -58,65 +58,85 @@ tokens = {
 st.title("TokenGate App")
 st.markdown("Check your wallet for supported tokens.")
 
-# MetaMask connection JavaScript
+# Updated MetaMask detection JavaScript
+check_metamask_js = """
+async function checkMetaMask() {
+    try {
+        if (window.ethereum) {
+            // Check if we can access ethereum object
+            const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error('MetaMask check error:', error);
+        return false;
+    }
+}
+await checkMetaMask();
+"""
+
+# Updated MetaMask connection JavaScript
 connect_metamask_js = """
 async function connectMetaMask() {
-    if (typeof window.ethereum !== 'undefined') {
-        try {
+    try {
+        if (window.ethereum) {
+            // Request account access
             const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            return accounts[0];
-        } catch (error) {
-            return null;
+            if (accounts && accounts.length > 0) {
+                return accounts[0];
+            }
         }
-    } else {
-        return 'no_metamask';
+        return null;
+    } catch (error) {
+        console.error('MetaMask connection error:', error);
+        return null;
     }
 }
 await connectMetaMask();
 """
 
-# Check if MetaMask is installed
-check_metamask_js = """
-if (typeof window.ethereum !== 'undefined') {
-    return true;
-} else {
-    return false;
-}
-"""
-
 # Session state initialization
 if "wallet_address" not in st.session_state:
     st.session_state.wallet_address = None
+if "metamask_checked" not in st.session_state:
+    st.session_state.metamask_checked = False
 
 # Handle wallet connection
 if not st.session_state.wallet_address:
     st.markdown("### Connect Your Wallet")
     
-    # Check if MetaMask is installed
-    metamask_installed = st_javascript(check_metamask_js)
+    # Add a button to check for MetaMask
+    if not st.session_state.metamask_checked:
+        if st.button("Check for MetaMask"):
+            metamask_available = st_javascript(check_metamask_js)
+            st.session_state.metamask_checked = True
+            st.session_state.metamask_available = metamask_available
+            st.rerun()
     
-    if metamask_installed:
-        if st.button("Connect MetaMask"):
-            wallet_address = st_javascript(connect_metamask_js)
-            if wallet_address == 'no_metamask':
-                st.error("MetaMask is not installed. Please install MetaMask to continue.")
-            elif wallet_address:
-                st.session_state.wallet_address = wallet_address
-                st.rerun()
-    else:
-        st.error("MetaMask is not installed. Please install MetaMask to continue.")
-        st.markdown("[Install MetaMask](https://metamask.io/download/)")
+    # If MetaMask check has been performed
+    if st.session_state.metamask_checked:
+        if st.session_state.get('metamask_available', False):
+            if st.button("Connect MetaMask"):
+                wallet_address = st_javascript(connect_metamask_js)
+                if wallet_address:
+                    st.session_state.wallet_address = wallet_address
+                    st.rerun()
+                else:
+                    st.error("Failed to connect to MetaMask. Please try again.")
+        else:
+            st.error("MetaMask is not detected. Please install MetaMask to continue.")
+            st.markdown("[Install MetaMask](https://metamask.io/download/)")
 
-# Display wallet status and token information
+# Rest of the code (token checking and display) remains the same
 if st.session_state.wallet_address:
     st.success(f"Wallet connected: {st.session_state.wallet_address}")
     
-    # Disconnect button
     if st.button("Disconnect Wallet"):
         st.session_state.wallet_address = None
+        st.session_state.metamask_checked = False  # Reset the check
         st.rerun()
     
-    # Check tokens
     try:
         checksum_address = web3.to_checksum_address(st.session_state.wallet_address)
         
@@ -136,7 +156,6 @@ if st.session_state.wallet_address:
             except Exception:
                 pass
         
-        # Display detected tokens
         if detected_tokens:
             st.success("The wallet holds the following tokens:")
             for token in detected_tokens:
