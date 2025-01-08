@@ -58,72 +58,107 @@ tokens = {
 st.title("TokenGate App")
 st.markdown("Check your wallet for supported tokens.")
 
-# Create HTML/JS component for MetaMask interaction
+# Create minimal HTML/JS component for MetaMask interaction
 metamask_html = """
-<div id="metamask-container">
-    <button id="connect-button" style="padding: 10px 20px; background-color: #1f1f1f; color: white; border: none; border-radius: 5px; cursor: pointer;">
-        Connect MetaMask
-    </button>
-    <p id="status" style="margin-top: 10px;"></p>
-</div>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <div id="metamask-container">
+        <button id="connect-button" 
+                style="padding: 10px 20px; 
+                       background-color: #1f1f1f; 
+                       color: white; 
+                       border: none; 
+                       border-radius: 5px; 
+                       cursor: pointer;">
+            Connect MetaMask
+        </button>
+        <p id="status" style="margin-top: 10px;"></p>
+    </div>
 
-<script>
-document.getElementById('connect-button').addEventListener('click', async () => {
-    const statusElement = document.getElementById('status');
-    
-    try {
-        if (typeof window.ethereum !== 'undefined') {
-            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            if (accounts.length > 0) {
-                // Send the address back to Streamlit
-                window.parent.postMessage({
-                    type: 'metamask_connected',
-                    address: accounts[0]
-                }, '*');
-                
-                statusElement.textContent = 'Connected: ' + accounts[0];
-                statusElement.style.color = 'green';
+    <script>
+        (function() {
+            const button = document.getElementById('connect-button');
+            const status = document.getElementById('status');
+            
+            async function connectWallet() {
+                if (typeof window.ethereum !== 'undefined') {
+                    try {
+                        const accounts = await window.ethereum.request({
+                            method: 'eth_requestAccounts'
+                        });
+                        
+                        if (accounts.length > 0) {
+                            const address = accounts[0];
+                            status.textContent = 'Connected: ' + address;
+                            status.style.color = 'green';
+                            
+                            // Store in localStorage as fallback
+                            localStorage.setItem('walletAddress', address);
+                            
+                            // Try to update Streamlit
+                            try {
+                                window.parent.postMessage({
+                                    type: 'metamask_connected',
+                                    address: address
+                                }, '*');
+                            } catch (e) {
+                                console.log('Postmessage failed, using localStorage');
+                            }
+                        }
+                    } catch (err) {
+                        status.textContent = 'Error: ' + err.message;
+                        status.style.color = 'red';
+                    }
+                } else {
+                    status.textContent = 'Please install MetaMask';
+                    status.style.color = 'red';
+                }
             }
-        } else {
-            statusElement.textContent = 'MetaMask not detected. Please install MetaMask.';
-            statusElement.style.color = 'red';
-        }
-    } catch (error) {
-        statusElement.textContent = 'Error connecting to MetaMask: ' + error.message;
-        statusElement.style.color = 'red';
-    }
-});
-
-// Listen for account changes
-if (typeof window.ethereum !== 'undefined') {
-    window.ethereum.on('accountsChanged', function (accounts) {
-        window.parent.postMessage({
-            type: 'metamask_account_changed',
-            address: accounts[0] || null
-        }, '*');
-    });
-}
-</script>
+            
+            button.addEventListener('click', connectWallet);
+            
+            // Check for stored address on load
+            const storedAddress = localStorage.getItem('walletAddress');
+            if (storedAddress) {
+                status.textContent = 'Previously connected: ' + storedAddress;
+                status.style.color = 'green';
+            }
+        })();
+    </script>
+</body>
+</html>
 """
 
 # Session state initialization
 if "wallet_address" not in st.session_state:
     st.session_state.wallet_address = None
 
-# Display MetaMask connection component if not connected
-if not st.session_state.wallet_address:
-    # Use the HTML component
+# Add tabs for different connection methods
+tab1, tab2 = st.tabs(["MetaMask Connection", "Manual Entry"])
+
+with tab1:
+    # Display MetaMask component
     components.html(metamask_html, height=100)
     
-    # Add a manual address input for testing/backup
-    st.markdown("### Or enter wallet address manually:")
+    # Add a refresh button
+    if st.button("Refresh Connection Status"):
+        st.rerun()
+
+with tab2:
+    # Manual address input
+    st.markdown("### Enter wallet address manually")
     manual_address = st.text_input("Enter Ethereum address (0x...)")
     if manual_address and manual_address.startswith("0x"):
         if st.button("Check Address"):
             st.session_state.wallet_address = manual_address
             st.rerun()
 
-# Rest of your token checking code remains the same
+# Token checking code (only show if we have an address)
 if st.session_state.wallet_address:
     st.success(f"Wallet connected: {st.session_state.wallet_address}")
     
