@@ -1,6 +1,6 @@
 import streamlit as st
 from wallet_connect import wallet_connect
-
+from web3 import Web3
 
 # PulseChain RPC Endpoint
 pulsechain_rpc = "https://rpc.pulsechain.com"
