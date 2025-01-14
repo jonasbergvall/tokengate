@@ -65,7 +65,7 @@ if "wallet_address" not in st.session_state:
     st.session_state.wallet_address = None
 
 # MetaMask wallet connection
-wallet_address = wallet_connect(label="Connect Wallet", key="unique_wallet_connect_key")
+wallet_address = wallet_connect(label="Connect Wallet", key="wallet_connect")
 
 # Update session state upon wallet connection
 if wallet_address and wallet_address != "not":  # Check if wallet_address is valid
