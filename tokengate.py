@@ -54,23 +54,20 @@ tokens = {
     },
 }
 
-# Initialize Streamlit app
-st.title("Token Gate")
-st.markdown("Check your wallet for supported tokens.")
+# Streamlit app
+st.title("Token Gate with Wallet Connect")
+st.markdown("Connect your wallet to check for supported tokens.")
 
-# Initialize session state variables
-if "wallet_connected" not in st.session_state:
-    st.session_state.wallet_connected = False
-if "wallet_address" not in st.session_state:
-    st.session_state.wallet_address = None
+# Wallet connection
+wallet_address = wallet_connect(label="wallet", key="wallet_connection_component")
 
-# MetaMask wallet connection
-wallet_address = wallet_connect(label="Connect Wallet", key="wallet_connection_component")
+# Check wallet connection
+if wallet_address and wallet_address != "not":
+    st.success(f"Connected wallet: {wallet_address}")
+    st.markdown("You can now interact with the dApp.")
+else:
+    st.warning("Please connect your wallet to proceed.")
 
-# Update session state upon wallet connection
-if wallet_address and wallet_address != "not":  # Check if wallet_address is valid
-    st.session_state.wallet_connected = True
-    st.session_state.wallet_address = wallet_address
 
 # Handle wallet connection
 if st.session_state.wallet_connected:
