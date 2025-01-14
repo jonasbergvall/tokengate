@@ -81,8 +81,8 @@ else:
 
 
 # Handle wallet connection
-if st.session_state.wallet_connected:
-    st.success(f"Wallet connected: {st.session_state.wallet_address}")
+# if st.session_state.wallet_connected:
+    # st.success(f"Wallet connected: {st.session_state.wallet_address}")
 
     # Check Tokens Button
     if st.button("Check Tokens"):
