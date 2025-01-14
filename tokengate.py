@@ -72,27 +72,18 @@ if wallet_address and wallet_address != "not":  # Check if wallet_address is val
     st.session_state.wallet_connected = True
     st.session_state.wallet_address = wallet_address
 
-# Check wallet connection
+# Wallet status
 if st.session_state.wallet_connected:
     st.success(f"Connected wallet: {st.session_state.wallet_address}")
     st.markdown("You can now interact with the dApp.")
-else:
-    st.warning("Please connect your wallet to proceed.")
-
-
-# Handle wallet connection
-# if st.session_state.wallet_connected:
-    # st.success(f"Wallet connected: {st.session_state.wallet_address}")
 
     # Check Tokens Button
     if st.button("Check Tokens"):
-        # Ensure the wallet address is valid before using it
         if st.session_state.wallet_address.startswith("0x") and len(st.session_state.wallet_address) == 42:
             try:
                 checksum_address = web3.to_checksum_address(st.session_state.wallet_address)
-
-                # Check for tokens in wallet
                 detected_tokens = []
+
                 for token_name, token_details in tokens.items():
                     try:
                         token_contract = web3.eth.contract(
@@ -101,15 +92,12 @@ else:
                         raw_balance = token_contract.functions.balanceOf(checksum_address).call()
                         decimals = token_contract.functions.decimals().call()
 
-                        # Convert balance to human-readable format
                         balance = raw_balance / (10 ** decimals)
-
                         if balance > 0:
                             detected_tokens.append(token_details)
                     except Exception as e:
                         st.warning(f"Error checking token {token_name}: {e}")
 
-                # Display detected tokens
                 if detected_tokens:
                     st.success("The wallet holds the following tokens:")
                     for token in detected_tokens:
@@ -133,4 +121,4 @@ else:
         else:
             st.error("Invalid wallet address. Please connect a valid Ethereum wallet.")
 else:
-    st.warning("No wallet connected. Please connect your wallet to proceed.")
+    st.warning("Please connect your wallet to proceed.")
