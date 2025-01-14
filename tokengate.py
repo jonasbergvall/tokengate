@@ -65,7 +65,7 @@ if "wallet_address" not in st.session_state:
     st.session_state.wallet_address = None
 
 # Wallet connection
-wallet_address = wallet_connect(label="wallet", key="wallet_connection_component")
+wallet_address = wallet_connect(label="wallet", key="wallet")
 
 # Update session state upon wallet connection
 if wallet_address and wallet_address != "not":  # Check if wallet_address is valid
