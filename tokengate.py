@@ -58,12 +58,23 @@ tokens = {
 st.title("Token Gate with Wallet Connect")
 st.markdown("Connect your wallet to check for supported tokens.")
 
+# Initialize session state variables
+if "wallet_connected" not in st.session_state:
+    st.session_state.wallet_connected = False
+if "wallet_address" not in st.session_state:
+    st.session_state.wallet_address = None
+
 # Wallet connection
 wallet_address = wallet_connect(label="wallet", key="wallet_connection_component")
 
+# Update session state upon wallet connection
+if wallet_address and wallet_address != "not":  # Check if wallet_address is valid
+    st.session_state.wallet_connected = True
+    st.session_state.wallet_address = wallet_address
+
 # Check wallet connection
-if wallet_address and wallet_address != "not":
-    st.success(f"Connected wallet: {wallet_address}")
+if st.session_state.wallet_connected:
+    st.success(f"Connected wallet: {st.session_state.wallet_address}")
     st.markdown("You can now interact with the dApp.")
 else:
     st.warning("Please connect your wallet to proceed.")
