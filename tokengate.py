@@ -2,6 +2,19 @@ import streamlit as st
 from wallet_connect import wallet_connect
 from web3 import Web3
 
+# JavaScript snippet to force reload
+force_reload_js = """
+<script>
+    if (!window.location.hash.includes("reloaded")) {
+        window.location.hash = "#reloaded";
+        window.location.reload();
+    }
+</script>
+"""
+
+# Include JavaScript for force reload
+st.markdown(force_reload_js, unsafe_allow_html=True)
+
 # PulseChain RPC Endpoint
 pulsechain_rpc = "https://rpc.pulsechain.com"
 web3 = Web3(Web3.HTTPProvider(pulsechain_rpc))
