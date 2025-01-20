@@ -1,19 +1,7 @@
 import streamlit as st
 from wallet_connect import wallet_connect
 from web3 import Web3
-
-# JavaScript snippet to force reload
-force_reload_js = """
-<script>
-    if (!window.location.hash.includes("reloaded")) {
-        window.location.hash = "#reloaded";
-        window.location.reload();
-    }
-</script>
-"""
-
-# Include JavaScript for force reload
-st.markdown(force_reload_js, unsafe_allow_html=True)
+import time
 
 # PulseChain RPC Endpoint
 pulsechain_rpc = "https://rpc.pulsechain.com"
@@ -67,30 +55,52 @@ tokens = {
     },
 }
 
-# Streamlit app
-st.title("Token Gate with Wallet Connect")
-st.markdown("Connect your wallet to check for supported tokens.")
-
 # Initialize session state variables
 if "wallet_connected" not in st.session_state:
     st.session_state.wallet_connected = False
 if "wallet_address" not in st.session_state:
     st.session_state.wallet_address = None
+if "connection_attempts" not in st.session_state:
+    st.session_state.connection_attempts = 0
+if "last_connection_time" not in st.session_state:
+    st.session_state.last_connection_time = time.time()
 
-# Wallet connection
-wallet_address = wallet_connect(label="wallet", key="wallet")
+# Streamlit app
+st.title("Token Gate with Wallet Connect")
+st.markdown("Connect your wallet to check for supported tokens.")
 
-# Update session state upon wallet connection
-if wallet_address and wallet_address != "not":  # Check if wallet_address is valid
-    st.session_state.wallet_connected = True
-    st.session_state.wallet_address = wallet_address
+# Wallet connection with auto-reconnect logic
+try:
+    wallet_address = wallet_connect(label="wallet", key="wallet")
+    
+    # Reset connection attempts on successful connection
+    if wallet_address and wallet_address != "not":
+        st.session_state.wallet_connected = True
+        st.session_state.wallet_address = wallet_address
+        st.session_state.connection_attempts = 0
+        st.session_state.last_connection_time = time.time()
+    elif time.time() - st.session_state.last_connection_time > 5:  # Wait 5 seconds between retries
+        st.session_state.connection_attempts += 1
+        st.session_state.last_connection_time = time.time()
+        
+        if st.session_state.connection_attempts <= 3:  # Limit to 3 attempts
+            st.warning("Attempting to reconnect... Please wait.")
+            time.sleep(1)  # Small delay before rerun
+            st.rerun()
+        else:
+            st.error("Unable to establish connection. Please refresh the page manually.")
+            st.session_state.connection_attempts = 0  # Reset counter
+except Exception as e:
+    st.error(f"Connection error: {e}")
+    if st.button("Retry Connection"):
+        st.session_state.connection_attempts = 0
+        st.rerun()
 
-# Wallet status
+# Rest of your token checking logic
 if st.session_state.wallet_connected:
     st.success(f"Connected wallet: {st.session_state.wallet_address}")
     st.markdown("You can now interact with the dApp.")
 
-    # Check Tokens Button
     if st.button("Check Tokens"):
         if st.session_state.wallet_address.startswith("0x") and len(st.session_state.wallet_address) == 42:
             try:
