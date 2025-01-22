@@ -7,7 +7,7 @@ import time
 pulsechain_rpc = "https://rpc.pulsechain.com"
 web3 = Web3(Web3.HTTPProvider(pulsechain_rpc))
 
-# Token contract details (your existing tokens dictionary remains the same)
+# Token contract details remain the same
 tokens = {
     "TEED": {
         "address": "0xA55385633FFFab595E21880Ed7323cFD7D11Cd25",
@@ -55,118 +55,76 @@ tokens = {
     },
 }
 
-def initialize_session_state():
-    """Initialize all session state variables"""
-    if "wallet_connected" not in st.session_state:
-        st.session_state.wallet_connected = False
-    if "wallet_address" not in st.session_state:
-        st.session_state.wallet_address = None
-    if "connection_attempts" not in st.session_state:
-        st.session_state.connection_attempts = 0
-    if "last_connection_time" not in st.session_state:
-        st.session_state.last_connection_time = time.time()
-    if "wallet_button_key" not in st.session_state:
-        st.session_state.wallet_button_key = "unique_wallet_button"
+# Initialize session state variables
+if "wallet_connected" not in st.session_state:
+    st.session_state.wallet_connected = False
+if "wallet_address" not in st.session_state:
+    st.session_state.wallet_address = None
 
-def handle_wallet_connection():
-    """Handle wallet connection with improved error handling"""
-    try:
-        if not st.session_state.wallet_connected:
-            wallet_address = wallet_connect(
-                label="Connect Wallet",
-                key=st.session_state.wallet_button_key
-            )
-            
-            if wallet_address and wallet_address != "not":
-                st.session_state.wallet_connected = True
-                st.session_state.wallet_address = wallet_address
-                st.session_state.connection_attempts = 0
-                st.session_state.last_connection_time = time.time()
-                return True
-            
-            # Handle reconnection attempts
-            if time.time() - st.session_state.last_connection_time > 5:
-                st.session_state.connection_attempts += 1
-                st.session_state.last_connection_time = time.time()
-                
-                if st.session_state.connection_attempts <= 3:
-                    st.warning("Attempting to reconnect... Please wait.")
-                    time.sleep(1)
-                    st.rerun()
-                else:
-                    st.error("Unable to establish connection. Please refresh the page manually.")
-                    st.session_state.connection_attempts = 0
-        return False
-    except Exception as e:
-        st.error(f"Connection error: {e}")
-        if st.button("Retry Connection"):
-            st.session_state.clear()
-            st.rerun()
-        return False
+# Streamlit app
+st.title("Token Gate with Wallet Connect")
+st.markdown("Connect your wallet to check for supported tokens.")
 
-def check_token_balance(address, token_details):
-    """Check token balance for a given address and token"""
-    token_contract = web3.eth.contract(
-        address=token_details["address"],
-        abi=token_details["abi"]
-    )
-    raw_balance = token_contract.functions.balanceOf(address).call()
-    decimals = token_contract.functions.decimals().call()
-    return raw_balance / (10 ** decimals)
+# Wallet connection - simplified and more direct
+try:
+    wallet_info = wallet_connect(key="wallet")
+    
+    if wallet_info and wallet_info != "not":
+        st.session_state.wallet_connected = True
+        st.session_state.wallet_address = wallet_info
+except Exception as e:
+    st.error(f"Connection error: {e}")
+    if st.button("Retry Connection"):
+        st.session_state.clear()
+        st.rerun()
 
-def main():
-    st.title("Token Gate with Wallet Connect")
-    st.markdown("Connect your wallet to check for supported tokens.")
+# Rest of your token checking logic
+if st.session_state.wallet_connected:
+    st.success(f"Connected wallet: {st.session_state.wallet_address}")
+    st.markdown("You can now interact with the dApp.")
 
-    # Initialize session state
-    initialize_session_state()
+    if st.button("Check Tokens"):
+        if st.session_state.wallet_address.startswith("0x") and len(st.session_state.wallet_address) == 42:
+            try:
+                checksum_address = web3.to_checksum_address(st.session_state.wallet_address)
+                detected_tokens = []
 
-    # Handle wallet connection
-    connection_status = handle_wallet_connection()
+                for token_name, token_details in tokens.items():
+                    try:
+                        token_contract = web3.eth.contract(
+                            address=token_details["address"],
+                            abi=token_details["abi"]
+                        )
+                        raw_balance = token_contract.functions.balanceOf(checksum_address).call()
+                        decimals = token_contract.functions.decimals().call()
 
-    # Main app logic
-    if st.session_state.wallet_connected:
-        st.success(f"Connected wallet: {st.session_state.wallet_address}")
-        st.markdown("You can now interact with the dApp.")
+                        balance = raw_balance / (10 ** decimals)
+                        if balance > 0:
+                            detected_tokens.append(token_details)
+                    except Exception as e:
+                        st.warning(f"Error checking token {token_name}: {e}")
 
-        if st.button("Check Tokens"):
-            if st.session_state.wallet_address.startswith("0x") and len(st.session_state.wallet_address) == 42:
-                try:
-                    checksum_address = web3.to_checksum_address(st.session_state.wallet_address)
-                    detected_tokens = []
-
-                    for token_name, token_details in tokens.items():
-                        try:
-                            balance = check_token_balance(checksum_address, token_details)
-                            if balance > 0:
-                                detected_tokens.append(token_details)
-                        except Exception as e:
-                            st.warning(f"Error checking token {token_name}: {e}")
-
-                    if detected_tokens:
-                        st.success("The wallet holds the following tokens:")
-                        for token in detected_tokens:
-                            st.markdown(
-                                f"""
-                                <div style="display: flex; align-items: center; border: 1px solid #ddd; border-radius: 10px; padding: 10px; margin: 10px 0; box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);">
-                                    <img src="{token['image_url']}" alt="{token['name']}" style="width: 60px; height: 60px; border-radius: 5px; margin-right: 15px;">
-                                    <div>
-                                        <p style="margin: 0; font-size: 16px; font-weight: bold;">Access granted: {token['name']}</p>
-                                        <p style="margin: 5px 0 0; font-size: 14px;">Since you hold the {token['name']} token, you have access to exclusive content.</p>
-                                        <a href="{token['content_url']}" target="_blank" style="color: #007bff; text-decoration: none;">Access the content</a>
-                                    </div>
+                if detected_tokens:
+                    st.success("The wallet holds the following tokens:")
+                    for token in detected_tokens:
+                        st.markdown(
+                            f"""
+                            <div style="display: flex; align-items: center; border: 1px solid #ddd; border-radius: 10px; padding: 10px; margin: 10px 0; box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);">
+                                <img src="{token['image_url']}" alt="{token['name']}" style="width: 60px; height: 60px; border-radius: 5px; margin-right: 15px;">
+                                <div>
+                                    <p style="margin: 0; font-size: 16px; font-weight: bold;">Access granted: {token['name']}</p>
+                                    <p style="margin: 5px 0 0; font-size: 14px;">Since you hold the {token['name']} token, you have access to exclusive content.</p>
+                                    <a href="{token['content_url']}" target="_blank" style="color: #007bff; text-decoration: none;">Access the content</a>
                                 </div>
-                                """,
-                                unsafe_allow_html=True,
-                            )
-                    else:
-                        st.warning("The wallet does not hold any supported tokens.")
-                except Exception as e:
-                    st.error(f"Error processing wallet address: {e}")
-            else:
-                st.error("Invalid wallet address. Please connect a valid Ethereum wallet.")
-    else:
-        st.warning("Please connect your wallet to proceed.")
-
-if __name__ == "__main__":
-    main()
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+                else:
+                    st.warning("The wallet does not hold any supported tokens.")
+            except Exception as e:
+                st.error(f"Error processing wallet address: {e}")
+        else:
+            st.error("Invalid wallet address. Please connect a valid Ethereum wallet.")
+else:
+    st.warning("Please connect your wallet to proceed.")
