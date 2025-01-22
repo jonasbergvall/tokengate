@@ -65,9 +65,10 @@ if "wallet_address" not in st.session_state:
 st.title("Token Gate with Wallet Connect")
 st.markdown("Connect your wallet to check for supported tokens.")
 
-# Wallet connection - simplified and more direct
+# Wallet connection with correct parameters
 try:
-    wallet_info = wallet_connect(key="wallet")
+    # Using a unique key for the wallet connect button and providing required label
+    wallet_info = wallet_connect(label="Connect Wallet", key="unique_wallet_connect")
     
     if wallet_info and wallet_info != "not":
         st.session_state.wallet_connected = True
