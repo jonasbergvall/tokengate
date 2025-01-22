@@ -60,24 +60,33 @@ if "wallet_connected" not in st.session_state:
     st.session_state.wallet_connected = False
 if "wallet_address" not in st.session_state:
     st.session_state.wallet_address = None
+if "connection_attempts" not in st.session_state:
+    st.session_state.connection_attempts = 0
+if "last_connection_time" not in st.session_state:
+    st.session_state.last_connection_time = time.time()
+if "button_generated" not in st.session_state:
+    st.session_state.button_generated = False
 
 # Streamlit app
 st.title("Token Gate with Wallet Connect")
 st.markdown("Connect your wallet to check for supported tokens.")
 
-# Wallet connection with correct parameters
-try:
-    # Using a unique key for the wallet connect button and providing required label
-    wallet_info = wallet_connect(label="Connect Wallet", key="unique_wallet_connect")
-    
-    if wallet_info and wallet_info != "not":
-        st.session_state.wallet_connected = True
-        st.session_state.wallet_address = wallet_info
-except Exception as e:
-    st.error(f"Connection error: {e}")
-    if st.button("Retry Connection"):
-        st.session_state.clear()
-        st.rerun()
+# Only generate the wallet connect button if it hasn't been generated yet
+if not st.session_state.button_generated:
+    try:
+        wallet_address = wallet_connect(label="Connect", key="wallet")
+        st.session_state.button_generated = True
+        
+        if wallet_address and wallet_address != "not":
+            st.session_state.wallet_connected = True
+            st.session_state.wallet_address = wallet_address
+            st.session_state.connection_attempts = 0
+            st.session_state.last_connection_time = time.time()
+    except Exception as e:
+        st.error(f"Connection error: {e}")
+        if st.button("Retry Connection"):
+            st.session_state.clear()
+            st.rerun()
 
 # Rest of your token checking logic
 if st.session_state.wallet_connected:
