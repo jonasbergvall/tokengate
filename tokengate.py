@@ -60,36 +60,29 @@ if "wallet_connected" not in st.session_state:
     st.session_state.wallet_connected = False
 if "wallet_address" not in st.session_state:
     st.session_state.wallet_address = None
-if "connection_attempts" not in st.session_state:
-    st.session_state.connection_attempts = 0
-if "last_connection_time" not in st.session_state:
-    st.session_state.last_connection_time = time.time()
-if "button_generated" not in st.session_state:
-    st.session_state.button_generated = False
 
 # Streamlit app
 st.title("Token Gate with Wallet Connect")
 st.markdown("Connect your wallet to check for supported tokens.")
 
-# Only generate the wallet connect button if it hasn't been generated yet
-if not st.session_state.button_generated:
-    try:
-        wallet_address = wallet_connect(label="Connect", key="wallet")
-        st.session_state.button_generated = True
-        
-        if wallet_address and wallet_address != "not":
-            st.session_state.wallet_connected = True
-            st.session_state.wallet_address = wallet_address
-            st.session_state.connection_attempts = 0
-            st.session_state.last_connection_time = time.time()
-    except Exception as e:
-        st.error(f"Connection error: {e}")
-        if st.button("Retry Connection"):
-            st.session_state.clear()
-            st.rerun()
+# Wallet connection
+try:
+    wallet_address = wallet_connect(label="Connect", key="wallet")
+    
+    # Update the session state immediately when we get a valid address
+    if wallet_address and wallet_address != "not":
+        st.session_state.wallet_connected = True
+        st.session_state.wallet_address = wallet_address
+        st.rerun()  # Force a rerun to update the UI
+    
+except Exception as e:
+    st.error(f"Connection error: {e}")
+    if st.button("Retry Connection"):
+        st.session_state.clear()
+        st.rerun()
 
-# Rest of your token checking logic
-if st.session_state.wallet_connected:
+# Check if we have a connected wallet in session state
+if st.session_state.wallet_address:
     st.success(f"Connected wallet: {st.session_state.wallet_address}")
     st.markdown("You can now interact with the dApp.")
 
