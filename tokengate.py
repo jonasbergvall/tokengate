@@ -66,23 +66,18 @@ st.title("Token Gate with Wallet Connect")
 st.markdown("Connect your wallet to check for supported tokens.")
 
 # Wallet connection
-try:
-    wallet_address = wallet_connect(label="Connect", key="wallet")
-    
-    # Update the session state immediately when we get a valid address
-    if wallet_address and wallet_address != "not":
-        st.session_state.wallet_connected = True
-        st.session_state.wallet_address = wallet_address
-        st.rerun()  # Force a rerun to update the UI
-    
-except Exception as e:
-    st.error(f"Connection error: {e}")
-    if st.button("Retry Connection"):
-        st.session_state.clear()
-        st.rerun()
+wallet_address = wallet_connect(label="Connect", key="wallet")
 
-# Check if we have a connected wallet in session state
-if st.session_state.wallet_address:
+# Update session state if we get a valid address
+if wallet_address and wallet_address != "not":
+    st.session_state.wallet_connected = True
+    st.session_state.wallet_address = wallet_address
+elif wallet_address == "not":
+    st.session_state.wallet_connected = False
+    st.session_state.wallet_address = None
+
+# Check if wallet is connected
+if st.session_state.wallet_connected and st.session_state.wallet_address:
     st.success(f"Connected wallet: {st.session_state.wallet_address}")
     st.markdown("You can now interact with the dApp.")
 
